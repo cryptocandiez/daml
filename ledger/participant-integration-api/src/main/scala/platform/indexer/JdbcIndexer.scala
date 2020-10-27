@@ -3,6 +3,7 @@
 
 package com.daml.platform.indexer
 
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.NotUsed
@@ -30,7 +31,7 @@ import com.daml.platform.store.dao.events.LfValueTranslation
 import com.daml.platform.store.dao.{JdbcLedgerDao, LedgerDao, PersistenceResponse}
 import com.daml.platform.store.entries.{PackageLedgerEntry, PartyLedgerEntry}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 object JdbcIndexer {
@@ -61,10 +62,12 @@ object JdbcIndexer {
 
     def resetSchema(): Future[ResourceOwner[JdbcIndexer]] =
       Future.successful(for {
+        executor <- ResourceOwner.forExecutorService(() => Executors.newWorkStealingPool())
         ledgerDao <- JdbcLedgerDao.writeOwner(
           serverRole,
           config.jdbcUrl,
           config.eventsPageSize,
+          ExecutionContext.fromExecutor(executor),
           metrics,
           lfValueTranslationCache,
           jdbcAsyncCommits = true,
@@ -75,10 +78,12 @@ object JdbcIndexer {
 
     private def initialized(): ResourceOwner[JdbcIndexer] =
       for {
+        executor <- ResourceOwner.forExecutorService(() => Executors.newWorkStealingPool())
         ledgerDao <- JdbcLedgerDao.writeOwner(
           serverRole,
           config.jdbcUrl,
           config.eventsPageSize,
+          ExecutionContext.fromExecutor(executor),
           metrics,
           lfValueTranslationCache,
           jdbcAsyncCommits = true,

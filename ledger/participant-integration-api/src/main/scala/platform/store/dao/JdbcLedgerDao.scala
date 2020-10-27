@@ -4,7 +4,6 @@ package com.daml.platform.store.dao
 
 import java.sql.Connection
 import java.time.Instant
-import java.util.concurrent.Executors
 import java.util.{Date, UUID}
 
 import akka.NotUsed
@@ -80,7 +79,7 @@ private class JdbcLedgerDao(
     override val maxConcurrentConnections: Int,
     dbDispatcher: DbDispatcher,
     dbType: DbType,
-    executionContext: ExecutionContext,
+    servicesExecutionContext: ExecutionContext,
     eventsPageSize: Int,
     performPostCommitValidation: Boolean,
     metrics: Metrics,
@@ -585,7 +584,7 @@ private class JdbcLedgerDao(
         .executeSql(metrics.daml.index.db.loadParties) { implicit conn =>
           selectParties(parties)
         }
-        .map(_.map(constructPartyDetails))(executionContext)
+        .map(_.map(constructPartyDetails))(servicesExecutionContext)
 
   override def listKnownParties()(implicit
       loggingContext: LoggingContext
@@ -595,7 +594,7 @@ private class JdbcLedgerDao(
         SQL_SELECT_ALL_PARTIES
           .as(PartyDataParser.*)
       }
-      .map(_.map(constructPartyDetails))(executionContext)
+      .map(_.map(constructPartyDetails))(servicesExecutionContext)
 
   private val SQL_INSERT_PARTY =
     SQL("""insert into parties(party, display_name, ledger_offset, explicit, is_local)
@@ -636,7 +635,7 @@ private class JdbcLedgerDao(
             d.sourceDescription,
           )
         ).toMap
-      )(executionContext)
+      )(servicesExecutionContext)
 
   override def getLfArchive(packageId: PackageId)(implicit
       loggingContext: LoggingContext
@@ -650,7 +649,7 @@ private class JdbcLedgerDao(
           .as[Option[Array[Byte]]](SqlParser.byteArray("package").singleOpt)
       }
       .map(_.map(data => Archive.parseFrom(Decode.damlLfCodedInputStreamFromBytes(data))))(
-        executionContext
+        servicesExecutionContext
       )
 
   private val SQL_INSERT_PACKAGE_ENTRY_ACCEPT =
@@ -890,14 +889,16 @@ private class JdbcLedgerDao(
 
   override val transactionsReader: TransactionsReader =
     new TransactionsReader(dbDispatcher, dbType, eventsPageSize, metrics, translation)(
-      executionContext
+      servicesExecutionContext
     )
 
   private val contractsReader: ContractsReader =
-    ContractsReader(dbDispatcher, dbType, metrics, lfValueTranslationCache)(executionContext)
+    ContractsReader(dbDispatcher, dbType, metrics, lfValueTranslationCache)(
+      servicesExecutionContext
+    )
 
   override val completions: CommandCompletionsReader =
-    new CommandCompletionsReader(dbDispatcher, dbType, metrics, executionContext)
+    new CommandCompletionsReader(dbDispatcher, dbType, metrics, servicesExecutionContext)
 
   private val postCommitValidation =
     if (performPostCommitValidation)
@@ -921,6 +922,7 @@ private[platform] object JdbcLedgerDao {
       serverRole: ServerRole,
       jdbcUrl: String,
       eventsPageSize: Int,
+      servicesExecutionContext: ExecutionContext,
       metrics: Metrics,
       lfValueTranslationCache: LfValueTranslation.Cache,
   )(implicit loggingContext: LoggingContext): ResourceOwner[LedgerReadDao] = {
@@ -931,6 +933,7 @@ private[platform] object JdbcLedgerDao {
       maxConnections,
       eventsPageSize,
       validate = false,
+      servicesExecutionContext,
       metrics,
       lfValueTranslationCache,
       jdbcAsyncCommits = false,
@@ -941,6 +944,7 @@ private[platform] object JdbcLedgerDao {
       serverRole: ServerRole,
       jdbcUrl: String,
       eventsPageSize: Int,
+      servicesExecutionContext: ExecutionContext,
       metrics: Metrics,
       lfValueTranslationCache: LfValueTranslation.Cache,
       jdbcAsyncCommits: Boolean,
@@ -954,6 +958,7 @@ private[platform] object JdbcLedgerDao {
       maxConnections,
       eventsPageSize,
       validate = false,
+      servicesExecutionContext,
       metrics,
       lfValueTranslationCache,
       jdbcAsyncCommits = jdbcAsyncCommits && dbType.supportsAsynchronousCommits,
@@ -964,6 +969,7 @@ private[platform] object JdbcLedgerDao {
       serverRole: ServerRole,
       jdbcUrl: String,
       eventsPageSize: Int,
+      servicesExecutionContext: ExecutionContext,
       metrics: Metrics,
       lfValueTranslationCache: LfValueTranslation.Cache,
       validatePartyAllocation: Boolean = false,
@@ -977,6 +983,7 @@ private[platform] object JdbcLedgerDao {
       maxConnections,
       eventsPageSize,
       validate = true,
+      servicesExecutionContext,
       metrics,
       lfValueTranslationCache,
       validatePartyAllocation,
@@ -1014,6 +1021,7 @@ private[platform] object JdbcLedgerDao {
       maxConnections: Int,
       eventsPageSize: Int,
       validate: Boolean,
+      servicesExecutionContext: ExecutionContext,
       metrics: Metrics,
       lfValueTranslationCache: LfValueTranslation.Cache,
       validatePartyAllocation: Boolean = false,
@@ -1028,12 +1036,11 @@ private[platform] object JdbcLedgerDao {
         metrics,
         jdbcAsyncCommits,
       )
-      executor <- ResourceOwner.forExecutorService(() => Executors.newWorkStealingPool())
     } yield new JdbcLedgerDao(
       maxConnections,
       dbDispatcher,
       DbType.jdbcType(jdbcUrl),
-      ExecutionContext.fromExecutor(executor),
+      servicesExecutionContext,
       eventsPageSize,
       validate,
       metrics,
