@@ -17,7 +17,9 @@ packages:
   - grpc-haskell-0.0.1.0
   - grpc-haskell-core-0.0.0.0
   - fuzzy-0.1.0.0
-  - haskell-src-1.0.3.1
+  - github: haskell-pkg-janitors/haskell-src
+    commit: "f9b7ff03e2543ca2dd01705a8ce5148ca728d0db"
+    sha256: "4271461fadb0bfb12c3745cf71d8117048f634f189b7ee020e48d60734c38e1d"
   - haskell-lsp-0.21.0.0
   - haddock-library-1.9.0
   - haskell-lsp-types-0.21.0.0
