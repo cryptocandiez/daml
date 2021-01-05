@@ -197,7 +197,7 @@ fetch_gh_paginated url = do
               in
               case typed_regex of
                 (_, _, _, [url, rel]) -> (rel, url)
-                _ -> fail $ "Assumption violated: link header entry did not match regex.\nEntry: " <> l
+                _ -> error $ "Assumption violated: link header entry did not match regex.\nEntry: " <> l
 
 data Asset = Asset { uri :: Network.URI.URI }
 instance JSON.FromJSON Asset where
