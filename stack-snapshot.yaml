@@ -19,7 +19,7 @@ packages:
   - fuzzy-0.1.0.0
   - haskell-src-1.0.3.1
   - haskell-lsp-0.21.0.0
-  - haddock-library-1.8.0
+  - haddock-library-1.9.0
   - haskell-lsp-types-0.21.0.0
   - hie-bios-0.4.0
   - hpp-0.6.1
