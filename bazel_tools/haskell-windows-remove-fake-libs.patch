@@ -1,5 +1,5 @@
 diff --git a/haskell/ghc_bindist.bzl b/haskell/ghc_bindist.bzl
-index aee64067..21fb566f 100644
+index aee64067..e049f37f 100644
 --- a/haskell/ghc_bindist.bzl
 +++ b/haskell/ghc_bindist.bzl
 @@ -385,10 +385,15 @@ haskell_toolchain(
@@ -13,7 +13,7 @@ index aee64067..21fb566f 100644
 +        # pthreads, due to libwinpthread-1.dll not being loaded. It's
 +        # hard to guesss the paths of these libraries, so we have to
 +        # use dir to recursively find them.
-+        result = ctx.execute(["cmd", "/c" "dir", "/s", "/b", "libstdc++.dll.a"])
++        result = ctx.execute(["cmd", "/c", "dir", "/s", "/b", "libstdc++.dll.a"])
 +        for path in result.stdout.splitlines():
 +            ctx.execute(["cmd", "/c", "del", path.strip()])
 +        ctx.execute(["rm", "mingw/x86_64-w64-mingw32/lib/libpthread.dll.a"])
