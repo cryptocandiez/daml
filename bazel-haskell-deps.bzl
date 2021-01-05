@@ -164,9 +164,9 @@ haskell_cabal_library(
         patches = [
             "@com_github_digital_asset_daml//bazel_tools:grpc-haskell-core-cpp-options.patch",
         ],
-        sha256 = "087527ec3841330b5328d123ca410901905d111529956821b724d92c436e6cdf",
-        strip_prefix = "grpc-haskell-core-0.0.0.0",
-        urls = ["http://hackage.haskell.org/package/grpc-haskell-core-0.0.0.0/grpc-haskell-core-0.0.0.0.tar.gz"],
+        sha256 = "531bbd4df2eca160be436074ade336a70cad3a6477df8d00d479440edfe9896b",
+        strip_prefix = "gRPC-haskell-0cb7999e9e89d0c17c5e1d917e97cc6e450b9346/core",
+        urls = ["https://github.com/awakesecurity/gRPC-haskell/archive/0cb7999e9e89d0c17c5e1d917e97cc6e450b9346.tar.gz"],
     )
 
     http_archive(
