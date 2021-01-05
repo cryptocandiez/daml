@@ -26,7 +26,6 @@ JS_FLOT_VERSION = "0.8.3"
 SHAKE_VERSION = "0.18.5"
 ZIP_VERSION = "1.5.0"
 
-
 def daml_haskell_deps():
     """Load all Haskell dependencies of the DAML repository."""
 
