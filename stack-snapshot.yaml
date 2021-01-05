@@ -25,7 +25,7 @@ packages:
   - haskell-lsp-types-0.23.0.0
   - hie-bios-0.4.0
   - hpp-0.6.3
-  - lsp-test-0.10.2.0
+  - lsp-test-0.11.0.7
   - parser-combinators-1.2.1
   - github: awakesecurity/proto3-suite
     commit: "0af901f9ef3b9719e08eae4fab8fd700d6c8047a"
