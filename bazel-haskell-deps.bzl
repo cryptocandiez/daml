@@ -26,6 +26,7 @@ JS_FLOT_VERSION = "0.8.3"
 SHAKE_VERSION = "0.18.5"
 ZIP_VERSION = "1.5.0"
 
+
 def daml_haskell_deps():
     """Load all Haskell dependencies of the DAML repository."""
 
@@ -167,6 +168,31 @@ haskell_cabal_library(
         sha256 = "087527ec3841330b5328d123ca410901905d111529956821b724d92c436e6cdf",
         strip_prefix = "grpc-haskell-core-0.0.0.0",
         urls = ["http://hackage.haskell.org/package/grpc-haskell-core-0.0.0.0/grpc-haskell-core-0.0.0.0.tar.gz"],
+    )
+
+    http_archive(
+        name = "haskell_src",
+        build_file_content = """
+load("@rules_haskell//haskell:cabal.bzl", "haskell_cabal_library")
+load("@stackage//:packages.bzl", "packages")
+haskell_cabal_library(
+    name = "haskell-src",
+    version = "1.0.3.0",
+    srcs = glob(["**"]),
+    haddock = False,
+    deps = packages["haskell-src"].deps,
+    tools = ["@stackage-exe//happy"],
+    verbose = False,
+    visibility = ["//visibility:public"],
+)
+""",
+        patch_args = ["-p1"],
+        patches = [
+            "@com_github_digital_asset_daml//bazel_tools:haskell-src-8.10.patch",
+        ],
+        sha256 = "4271461fadb0bfb12c3745cf71d8117048f634f189b7ee020e48d60734c38e1d",
+        strip_prefix = "haskell-src-f9b7ff03e2543ca2dd01705a8ce5148ca728d0db",
+        urls = ["https://github.com/haskell-pkg-janitors/haskell-src/archive/f9b7ff03e2543ca2dd01705a8ce5148ca728d0db.tar.gz"],
     )
 
     # Note (MK)
@@ -407,11 +433,11 @@ exports_files(["stack.exe"], visibility = ["//visibility:public"])
             "gitrev",
             "grpc-haskell",
             "haddock-library",
+            "happy",
             "hashable",
             "haskeline",
             "haskell-lsp",
             "haskell-lsp-types",
-            "haskell-src",
             "haskell-src-exts",
             "heaps",
             "hie-bios",
@@ -527,6 +553,7 @@ exports_files(["stack.exe"], visibility = ["//visibility:public"])
         vendored_packages = {
             "ghcide": "@ghcide_ghc_lib//:ghcide",
             "grpc-haskell-core": "@grpc_haskell_core//:grpc-haskell-core",
+            "haskell-src": "@haskell_src//:haskell-src",
             "js-jquery": "@js_jquery//:js-jquery",
             "js-dgtable": "@js_dgtable//:js-dgtable",
             "js-flot": "@js_flot//:js-flot",

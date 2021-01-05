@@ -24,7 +24,7 @@ packages:
   - haddock-library-1.9.0
   - haskell-lsp-types-0.21.0.0
   - hie-bios-0.4.0
-  - hpp-0.6.1
+  - hpp-0.6.3
   - lsp-test-0.10.2.0
   - parser-combinators-1.2.1
   - proto3-suite-0.4.0.0
