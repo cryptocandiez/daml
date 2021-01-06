@@ -408,6 +408,7 @@ exports_files(["stack.exe"], visibility = ["//visibility:public"])
             "aeson",
             "aeson-extra",
             "aeson-pretty",
+            "alex",
             "ansi-terminal",
             "ansi-wl-pprint",
             "array",
