@@ -121,6 +121,7 @@ haskell_library(
         patches = [
             "@com_github_digital_asset_daml//bazel_tools:haskell-ghcide-binary-q.patch",
             "@com_github_digital_asset_daml//bazel_tools:haskell-ghcide-expose-compat.patch",
+            "@com_github_digital_asset_daml//bazel_tools:haskell-ghcide-bounds.patch",
         ],
         sha256 = GHCIDE_SHA256,
         strip_prefix = "daml-ghcide-%s" % GHCIDE_REV,

@@ -1,0 +1,15 @@
+diff --git a/ghcide.cabal b/ghcide.cabal
+index bba7ee4..6acb632 100644
+--- a/ghcide.cabal
++++ b/ghcide.cabal
+@@ -43,8 +43,8 @@ library
+         filepath,
+         haddock-library >= 1.8,
+         hashable,
+-        haskell-lsp-types == 0.21.*,
+-        haskell-lsp == 0.21.*,
++        haskell-lsp-types == 0.23.*,
++        haskell-lsp == 0.23.*,
+         mtl,
+         network-uri,
+         prettyprinter-ansi-terminal,
