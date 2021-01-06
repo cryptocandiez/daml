@@ -1,20 +1,20 @@
 diff --git a/haskell/assets/ghc_8_10_3_win_base.patch b/haskell/assets/ghc_8_10_3_win_base.patch
 new file mode 100644
-index 00000000..5b6d3c34
+index 00000000..b205f35c
 --- /dev/null
 +++ b/haskell/assets/ghc_8_10_3_win_base.patch
 @@ -0,0 +1,11 @@
-+--- lib/package.conf.d/base-4.14.1.0.conf	2020-07-15 19:31:32.000000000 +0200
-++++ lib/package.conf.d/base-4.14.1.0.conf 	2020-12-15 18:05:11.000000000 +0100
-+@@ -83,7 +83,7 @@
++--- lib/package.conf.d/base-4.14.1.0.conf	2021-01-06 14:35:47.854943211 +0100
+++++ lib/package.conf.d/base-4.14.1.0.conf	2021-01-06 14:34:52.090263590 +0100
++@@ -86,7 +86,7 @@
 + dynamic-library-dirs: $topdir\base-4.14.1.0
 + data-dir:             $topdir\x86_64-windows-ghc-8.10.3\base-4.14.1.0
 + hs-libraries:         HSbase-4.14.1.0
-+-extra-libraries:      wsock32 user32 shell32 msvcrt mingw32 mingwex
++-extra-libraries:      wsock32 user32 shell32 msvcrt mingw32 mingwex shlwapi
 ++extra-libraries:      wsock32 ws2_32 user32 shell32 msvcrt mingw32 mingwex shlwapi stdc++
 + include-dirs:         $topdir\base-4.14.1.0\include
 + includes:             HsBase.h
-+ depends:              ghc-prim-0.5.3 integer-gmp-1.0.2.0 rts
++ depends:              ghc-prim-0.6.1 integer-gmp-1.0.3.0 rts
 diff --git a/haskell/ghc_bindist.bzl b/haskell/ghc_bindist.bzl
 index bd32204e..7f47b1e7 100644
 --- a/haskell/ghc_bindist.bzl
