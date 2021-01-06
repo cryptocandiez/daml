@@ -240,7 +240,6 @@ haskell_cabal_library(
         urls = ["https://daml-binaries.da-ext.net/da-ghc-lib/ghc-lib-927591afb5343097516894c6163a6df7.tar.gz"],
     )
 
-
     # Note (MK)
     # We vendor Shake and its JS dependencies
     # so that we can replace the data-files with file-embed.
