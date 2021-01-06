@@ -59,9 +59,9 @@ haskell_binary(
     visibility = ["//visibility:public"],
 )
 """,
-        sha256 = "216fb8b5d92afc9df70512da2331e098e926239efd55e770802079c2a13bad5e",
-        strip_prefix = "proto3-suite-0.4.0.0",
-        urls = ["http://hackage.haskell.org/package/proto3-suite-0.4.0.0/proto3-suite-0.4.0.0.tar.gz"],
+        sha256 = "b294ff0fe24c6c256dc8eca1d44c2a9a928b9a1bc70ddce6a1d059499edea119",
+        strip_prefix = "proto3-suite-0af901f9ef3b9719e08eae4fab8fd700d6c8047a",
+        urls = ["https://github.com/awakesecurity/proto3-suite/archive/0af901f9ef3b9719e08eae4fab8fd700d6c8047a.tar.gz"],
     )
 
     #
@@ -167,6 +167,26 @@ haskell_cabal_library(
         sha256 = "531bbd4df2eca160be436074ade336a70cad3a6477df8d00d479440edfe9896b",
         strip_prefix = "gRPC-haskell-0cb7999e9e89d0c17c5e1d917e97cc6e450b9346/core",
         urls = ["https://github.com/awakesecurity/gRPC-haskell/archive/0cb7999e9e89d0c17c5e1d917e97cc6e450b9346.tar.gz"],
+    )
+
+    http_archive(
+        name = "proto3-suite",
+        build_file_content = """
+load("@rules_haskell//haskell:cabal.bzl", "haskell_cabal_library")
+load("@stackage//:packages.bzl", "packages")
+haskell_cabal_library(
+    name = "proto3-suite",
+    version = "0.4.2.0",
+    srcs = glob(["src/**", "test-files/*.bin", "tests/*", "proto3-suite.cabal"]),
+    haddock = False,
+    deps = packages["proto3-suite"].deps,
+    verbose = False,
+    visibility = ["//visibility:public"],
+)
+""",
+        sha256 = "b294ff0fe24c6c256dc8eca1d44c2a9a928b9a1bc70ddce6a1d059499edea119",
+        strip_prefix = "proto3-suite-0af901f9ef3b9719e08eae4fab8fd700d6c8047a",
+        urls = ["https://github.com/awakesecurity/proto3-suite/archive/0af901f9ef3b9719e08eae4fab8fd700d6c8047a.tar.gz"],
     )
 
     http_archive(
@@ -509,7 +529,6 @@ exports_files(["stack.exe"], visibility = ["//visibility:public"])
             "pretty-show",
             "primitive",
             "process",
-            "proto3-suite",
             "proto3-wire",
             "QuickCheck",
             "quickcheck-instances",
@@ -583,6 +602,7 @@ exports_files(["stack.exe"], visibility = ["//visibility:public"])
             "js-jquery": "@js_jquery//:js-jquery",
             "js-dgtable": "@js_dgtable//:js-dgtable",
             "js-flot": "@js_flot//:js-flot",
+            "proto3-suite": "@proto3-suite//:proto3-suite",
             "shake": "@shake//:shake",
             "zip": "@zip//:zip",
         },
