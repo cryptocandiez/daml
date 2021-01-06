@@ -22,7 +22,6 @@ import com.daml.logging.LoggingContext
 import com.daml.metrics.Metrics
 import com.daml.platform.common.MismatchException
 import com.daml.platform.configuration.ServerRole
-import com.daml.platform.indexer
 import com.daml.platform.store.IndexMetadata
 import com.daml.platform.store.dao.events.LfValueTranslation
 import com.daml.platform.testing.LogCollector
@@ -98,19 +97,19 @@ final class JdbcIndexerSpec
   private def runAndShutdownIndexer(participantId: String): Future[Unit] =
     initializeIndexer(participantId).flatMap(runAndShutdown)
 
-  private def initializeIndexer(participantId: String): Future[ResourceOwner[JdbcIndexer]] = {
-    new indexer.JdbcIndexer.Factory(
-      ServerRole.Indexer,
-      IndexerConfig(
+  private def initializeIndexer(participantId: String): Future[ResourceOwner[JdbcIndexer]] =
+    new JdbcIndexer.Factory(
+      serverRole = ServerRole.Indexer,
+      config = IndexerConfig(
         participantId = v1.ParticipantId.assertFromString(participantId),
         jdbcUrl = postgresDatabase.url,
         startupMode = IndexerStartupMode.MigrateAndStart,
       ),
-      mockedReadService,
-      new Metrics(new MetricRegistry),
-      LfValueTranslation.Cache.none,
+      readService = mockedReadService,
+      servicesExecutionContext = materializer.executionContext,
+      metrics = new Metrics(new MetricRegistry),
+      lfValueTranslationCache = LfValueTranslation.Cache.none,
     ).migrateSchema(allowExistingSchema = true)
-  }
 
   private val mockedReadService: ReadService =
     when(mock[ReadService].getLedgerInitialConditions())

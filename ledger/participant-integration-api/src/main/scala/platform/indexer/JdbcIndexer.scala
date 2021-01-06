@@ -3,7 +3,6 @@
 
 package com.daml.platform.indexer
 
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.NotUsed
@@ -40,6 +39,7 @@ object JdbcIndexer {
       serverRole: ServerRole,
       config: IndexerConfig,
       readService: ReadService,
+      servicesExecutionContext: ExecutionContext,
       metrics: Metrics,
       lfValueTranslationCache: LfValueTranslation.Cache,
   )(implicit materializer: Materializer, loggingContext: LoggingContext) {
@@ -62,12 +62,11 @@ object JdbcIndexer {
 
     def resetSchema(): Future[ResourceOwner[JdbcIndexer]] =
       Future.successful(for {
-        executor <- ResourceOwner.forExecutorService(() => Executors.newWorkStealingPool())
         ledgerDao <- JdbcLedgerDao.writeOwner(
           serverRole,
           config.jdbcUrl,
           config.eventsPageSize,
-          ExecutionContext.fromExecutor(executor),
+          servicesExecutionContext,
           metrics,
           lfValueTranslationCache,
           jdbcAsyncCommits = true,
@@ -78,12 +77,11 @@ object JdbcIndexer {
 
     private def initialized(): ResourceOwner[JdbcIndexer] =
       for {
-        executor <- ResourceOwner.forExecutorService(() => Executors.newWorkStealingPool())
         ledgerDao <- JdbcLedgerDao.writeOwner(
           serverRole,
           config.jdbcUrl,
           config.eventsPageSize,
-          ExecutionContext.fromExecutor(executor),
+          servicesExecutionContext,
           metrics,
           lfValueTranslationCache,
           jdbcAsyncCommits = true,
