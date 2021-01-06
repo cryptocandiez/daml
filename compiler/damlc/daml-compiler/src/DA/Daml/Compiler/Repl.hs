@@ -35,7 +35,7 @@ import Data.Foldable
 import Data.Generics.Uniplate.Data (descendBi)
 import Data.Graph
 import Data.IORef
-import Data.List (foldl', intercalate)
+import Data.List (intercalate, stripPrefix)
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 import qualified Data.NameMap as NM
@@ -53,19 +53,14 @@ import Development.IDE.Types.Diagnostics
 import Development.IDE.Types.Location
 import ErrUtils
 import GHC
-import HsExpr (Stmt, StmtLR(..), LHsExpr)
-import HsExtension (GhcPs, GhcTc)
-import HsPat (Pat(..))
 import HscTypes (HscEnv(..), mkPrintUnqualified)
 import Language.Haskell.GhclibParserEx.Parse
 import Language.Haskell.LSP.Messages
-import Lexer (ParseResult(..))
 import Module (unitIdString)
 import OccName (OccSet, occName, elemOccSet, mkOccSet, mkVarOcc)
 import Outputable (parens, ppr, showSDoc, showSDocForUser)
 import qualified Outputable
 import RdrName (mkRdrUnqual)
-import SrcLoc (unLoc)
 import qualified System.Console.Repline as Repl
 import System.Exit
 import System.IO.Extra
@@ -393,15 +388,16 @@ runRepl importPkgs opts replClient logger ideState = do
           , lineNumber = 0
           , printUnqualified = getPrintUnqualified dflags tcr
           }
-    -- TODO[AH] Use Repl.evalReplOpts once we're using repline >= 0.2.2
-    let replM = Repl.evalRepl banner command options prefix tabComplete initialiser
-          where
-            banner = pure "daml> "
-            command = replLine
-            options = replOptions
-            prefix = Just ':'
-            tabComplete = Repl.Cursor $ \_ _ -> pure []
-            initialiser = pure ()
+    let replM = Repl.evalReplOpts Repl.ReplOpts
+          { banner = const (pure "daml> ")
+          , command = replLine
+          , options = replOptions
+          , prefix = Just ':'
+          , multilineCommand = Nothing
+          , tabComplete = Repl.Cursor $ \_ _ -> pure []
+          , initialiser = pure ()
+          , finaliser = pure Repl.Exit
+          }
     State.evalStateT replM initReplState
   where
     handleStmt
@@ -493,8 +489,8 @@ runRepl importPkgs opts replClient logger ideState = do
             Right () -> pure ()
 
     mkReplOption
-        :: (DynFlags -> [String] -> ExceptT Error ReplM ())
-        -> [String] -> ReplM ()
+        :: (DynFlags -> String -> ExceptT Error ReplM ())
+        -> String -> ReplM ()
     mkReplOption option args = do
         ReplState {lineNumber} <- State.get
         dflags <- liftIO $
@@ -504,7 +500,7 @@ runRepl importPkgs opts replClient logger ideState = do
         case r of
             Left err -> liftIO $ renderError dflags err
             Right () -> pure ()
-    replOptions :: [(String, [String] -> ReplM ())]
+    replOptions :: Repl.Options ReplM
     replOptions =
       [ ("help", mkReplOption optHelp)
       , ("json", mkReplOption optJson)
@@ -519,18 +515,18 @@ runRepl importPkgs opts replClient logger ideState = do
       , "   :module [+/-] <mod> ...     add or remove the modules from the import list"
       , "   :show imports               show the current module imports"
       ]
-    optJson dflags (unwords -> line) = do
+    optJson dflags line = do
         input <- ExceptT $ pure $ parseReplInput line dflags
         case input of
             ReplStatement stmt -> handleStmt dflags line stmt ReplClient.ReplJson
             ReplImport _ -> throwError (ExpectedExpression line)
-    optModule dflags ("-" : names) =
-        removeImports dflags $ map mkModuleName names
-    optModule dflags ("+" : names) =
-        addImports dflags $ map (simpleImportDecl . mkModuleName) names
+    optModule dflags (stripPrefix "-" -> Just names) =
+        removeImports dflags $ map mkModuleName (words names)
+    optModule dflags (stripPrefix "+" -> Just names) =
+        addImports dflags $ map (simpleImportDecl . mkModuleName) (words names)
     optModule dflags names =
-        addImports dflags $ map (simpleImportDecl . mkModuleName) names
-    optShow dflags ["imports"] = do
+        addImports dflags $ map (simpleImportDecl . mkModuleName) (words names)
+    optShow dflags "imports" = do
         ReplState {imports} <- State.get
         liftIO $ putStr $ unlines $ moduleImports dflags imports
     optShow _dflags _ = liftIO $ putStrLn ":show [imports]"

@@ -4,7 +4,6 @@
 module Main (main) where
 
 import Data.Function ((&))
-import Data.Semigroup ((<>))
 import System.FilePath.Posix ((</>))
 
 import qualified Control.Concurrent.Async
