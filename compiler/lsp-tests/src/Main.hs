@@ -335,7 +335,7 @@ requestTests run _runScenarios = testGroup "requests"
                     , "Main.add"
                     , ": Int -> Int -> Int"
                     , "```"
-                    , "*\t*\t*"
+                    , "* * *"
                     , "*Defined at " <> T.pack fp <> ":3:1*"
                     ]
               , _range = Just $ Range (Position 8 17) (Position 8 20)
@@ -355,7 +355,7 @@ requestTests run _runScenarios = testGroup "requests"
                     , ": NumericScale n"
                     , "=> Numeric n"
                     , "```"
-                    , "*\t*\t*"
+                    , "* * *"
                     ]
               , _range = Just $ Range (Position 1 27) (Position 1 30)
               }
@@ -883,7 +883,7 @@ multiPackageTests damlc
                       , "a"
                       , ": A"
                       , "```"
-                        , "*\t*\t*"
+                        , "* * *"
                         , "*Defined at " <> T.pack fpA <> ":3:1*"
                       ]
                 , _range = Just $ Range (Position 2 0) (Position 2 1)
