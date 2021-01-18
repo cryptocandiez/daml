@@ -19,14 +19,15 @@ import com.daml.lf.transaction.BlindingInfo
 import com.daml.metrics.{Metrics, Timed}
 import com.daml.platform.store.DbType
 
+/** TODO rename */
 object TransactionsWriter {
 
-  final class PreparedInsert private[TransactionsWriter] (
+  final class PreparedInsert(
       eventsTableExecutables: EventsTable.Batches,
       contractsTableExecutables: ContractsTable.Executables,
       contractWitnessesTableExecutables: ContractWitnessesTable.Executables,
   ) {
-    def write(metrics: Metrics)(implicit connection: Connection) = {
+    def write(metrics: Metrics)(implicit connection: Connection): Unit = {
       writeEvents(metrics)
       writeState(metrics)
     }
@@ -64,7 +65,7 @@ object TransactionsWriter {
   }
 }
 
-private[dao] final class TransactionsWriter(
+final class TransactionsWriter(
     dbType: DbType,
     metrics: Metrics,
     lfValueTranslation: LfValueTranslation,

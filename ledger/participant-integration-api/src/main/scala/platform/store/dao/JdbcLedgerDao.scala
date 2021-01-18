@@ -424,7 +424,7 @@ private class JdbcLedgerDao(
       transaction: CommittedTransaction,
       divulgedContracts: Iterable[DivulgedContract],
       blindingInfo: Option[BlindingInfo],
-  )(implicit loggingContext: LoggingContext): PreparedInsert =
+  ): PreparedInsert =
     transactionsWriter.prepare(
       submitterInfo,
       workflowId,

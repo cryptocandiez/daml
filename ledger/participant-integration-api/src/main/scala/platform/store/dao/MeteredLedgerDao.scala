@@ -205,7 +205,7 @@ private[platform] class MeteredLedgerDao(ledgerDao: LedgerDao, metrics: Metrics)
       transaction: CommittedTransaction,
       divulgedContracts: Iterable[DivulgedContract],
       blindingInfo: Option[BlindingInfo],
-  )(implicit loggingContext: LoggingContext): TransactionsWriter.PreparedInsert =
+  ): TransactionsWriter.PreparedInsert =
     ledgerDao.prepareTransactionInsert(
       submitterInfo,
       workflowId,
