@@ -1,0 +1,27 @@
+diff --git a/core/cbits/grpc_haskell.c b/core/cbits/grpc_haskell.c
+index ebbcbb1..d383983 100644
+--- a/cbits/grpc_haskell.c
++++ b/cbits/grpc_haskell.c
+@@ -505,7 +505,7 @@ grpc_auth_metadata_processor* mk_auth_metadata_processor(
+ grpc_call_credentials* grpc_metadata_credentials_create_from_plugin_(
+   grpc_metadata_credentials_plugin* plugin){
+ 
+-  return grpc_metadata_credentials_create_from_plugin(*plugin, NULL);
++  return grpc_metadata_credentials_create_from_plugin(*plugin, GRPC_PRIVACY_AND_INTEGRITY, NULL);
+ }
+ 
+ //This is a hack to work around GHC being unable to deal with raw struct params.
+diff --git a/core/src/Network/GRPC/Unsafe.chs b/core/src/Network/GRPC/Unsafe.chs
+index d11f533..6eb08b8 100644
+--- a/src/Network/GRPC/Unsafe.chs
++++ b/src/Network/GRPC/Unsafe.chs
+@@ -219,9 +219,6 @@ castPeek p = do
+     unTag `Tag'}
+   -> `()'#}
+ 
+-{#fun grpc_channel_ping as ^
+-  {`Channel', `CompletionQueue', unTag `Tag',unReserved `Reserved'} -> `()' #}
+-
+ {#fun grpc_channel_destroy as ^ {`Channel'} -> `()'#}
+ 
+ -- | Starts executing a batch of ops in the given 'OpArray'. Does not block.

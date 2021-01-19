@@ -146,10 +146,10 @@ def daml_deps():
     if "com_google_protobuf" not in native.existing_rules():
         http_archive(
             name = "com_google_protobuf",
-            sha256 = "60d2012e3922e429294d3a4ac31f336016514a91e5a63fd33f35743ccfe1bd7d",
-            # changing this version needs to be in sync with protobuf-java and grpc dependencies in bazel-java-deps.bzl
-            strip_prefix = "protobuf-3.11.0",
-            urls = ["https://github.com/google/protobuf/archive/v3.11.0.zip"],
+            sha256 = "bf0e5070b4b99240183b29df78155eee335885e53a8af8683964579c214ad301",
+            # changing this version needs to be in sync with protobuf-java and grpc dependencies in bazel-java-bdeps.bzl
+            strip_prefix = "protobuf-3.14.0",
+            urls = ["https://github.com/google/protobuf/archive/v3.14.0.zip"],
             patches = [
             ],
             patch_args = ["-p1"],
@@ -194,12 +194,12 @@ def daml_deps():
         # This should be kept in sync with the grpc version we get from Nix.
         http_archive(
             name = "com_github_grpc_grpc",
-            strip_prefix = "grpc-1.23.1",
-            urls = ["https://github.com/grpc/grpc/archive/v1.23.1.tar.gz"],
-            sha256 = "dd7da002b15641e4841f20a1f3eb1e359edb69d5ccf8ac64c362823b05f523d9",
+            strip_prefix = "grpc-1.34.1",
+            urls = ["https://github.com/grpc/grpc/archive/v1.34.1.tar.gz"],
+            sha256 = "c260a1dcdd26a78a9596494a3f41f9594ab5ec3a4d65cba4658bdee2b55ac844",
             patches = [
-                "@com_github_digital_asset_daml//bazel_tools:grpc-bazel-apple.patch",
-                "@com_github_digital_asset_daml//bazel_tools:grpc-bazel-mingw.patch",
+                #                "@com_github_digital_asset_daml//bazel_tools:grpc-bazel-apple.patch",
+                #                "@com_github_digital_asset_daml//bazel_tools:grpc-bazel-mingw.patch",
             ],
             patch_args = ["-p1"],
         )
@@ -207,12 +207,9 @@ def daml_deps():
     if "io_grpc_grpc_java" not in native.existing_rules():
         http_archive(
             name = "io_grpc_grpc_java",
-            strip_prefix = "grpc-java-1.21.0",
-            urls = ["https://github.com/grpc/grpc-java/archive/v1.21.0.tar.gz"],
-            sha256 = "9bc289e861c6118623fcb931044d843183c31d0e4d53fc43c4a32b56d6bb87fa",
-            patches = [
-                "@com_github_digital_asset_daml//bazel_tools:grpc-java-plugin-visibility.patch",
-            ],
+            strip_prefix = "grpc-java-1.35.0",
+            urls = ["https://github.com/grpc/grpc-java/archive/v1.35.0.tar.gz"],
+            sha256 = "537d01bdc5ae2bdb267853a75578d671db3075b33e3a00a93f5a572191d3a7b3",
             patch_args = ["-p1"],
         )
 

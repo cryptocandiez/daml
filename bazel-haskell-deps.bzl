@@ -163,6 +163,7 @@ haskell_cabal_library(
         patch_args = ["-p1"],
         patches = [
             "@com_github_digital_asset_daml//bazel_tools:grpc-haskell-core-cpp-options.patch",
+            "@com_github_digital_asset_daml//bazel_tools:grpc-haskell-core-upgrade.patch",
         ],
         sha256 = "087527ec3841330b5328d123ca410901905d111529956821b724d92c436e6cdf",
         strip_prefix = "grpc-haskell-core-0.0.0.0",

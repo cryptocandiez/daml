@@ -10,21 +10,30 @@ let
   overrides = _: pkgs: rec {
     nodejs = pkgs.nodejs-12_x;
     grpc = pkgs.grpc.overrideAttrs (oldAttrs: {
-      version = "1.23.1";
+      version = "1.34.1";
       src = pkgs.fetchFromGitHub {
         owner = "grpc";
         repo = "grpc";
-        rev = "v1.23.1";
-        sha256 = "1jcyd9jy7kz5zfch25s4inwlivb1y1w52fzfjy5ra5vcnp3hmqyr";
+        rev = "v1.34.1";
+        sha256 = "0p6si9i0gg885ag2x87a7jyzhgd5lhx2bh2vjj2ra1jn6y3vg6qk";
         fetchSubmodules = true;
       };
       # Upstream nixpkgs applies patches that are incompatbile with our version
       # of grpc. So, we disable them.
       patches = [
         # Fix glibc version conflict.
-        ./grpc-Fix-gettid-naming-conflict.patch
-        ./grpc-Rename-gettid-functions.patch
+#        ./grpc-Fix-gettid-naming-conflict.patch
+#        ./grpc-Rename-gettid-functions.patch
       ];
+    });
+    protobuf = pkgs.protobuf.overrideAttrs (oldAttrs: {
+      version = "3.14.0";
+      src = pkgs.fetchFromGitHub {
+        owner = "protocolbuffers";
+        repo = "protobuf";
+        rev = "v3.14.0";
+        sha256 = "1k4kkb78kdbz732wsph07v3zy3cz7l1msk2byrfvp0nb02sfl3a4";
+      };
     });
     ephemeralpg = pkgs.ephemeralpg.overrideAttrs(oldAttrs: {
       installPhase = ''
