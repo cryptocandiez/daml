@@ -18,14 +18,14 @@ import com.daml.platform.indexer.OffsetUpdate.{
   PreparedTransactionInsert,
   PreparedUpdate,
 }
-import com.daml.platform.indexer.UpdateIndexer.ExecuteUpdateFlow
+import com.daml.platform.indexer.ExecuteUpdate.ExecuteUpdateFlow
 import com.daml.platform.store.DbType
 import com.daml.platform.store.dao.{LedgerDao, PersistenceResponse}
 import com.daml.platform.store.entries.{PackageLedgerEntry, PartyLedgerEntry}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object UpdateIndexer {
+object ExecuteUpdate {
   type ExecuteUpdateFlow = Flow[OffsetStepUpdatePair[Update], Unit, NotUsed]
   type FlowOwnerBuilder =
     (
@@ -37,7 +37,7 @@ object UpdateIndexer {
         LoggingContext,
     ) => ResourceOwner[ExecuteUpdateFlow]
 
-  def ownerBuilder(
+  def flowOwner(
       dbType: DbType,
       ledgerDao: LedgerDao,
       metrics: Metrics,
@@ -47,7 +47,7 @@ object UpdateIndexer {
   ): ResourceOwner[ExecuteUpdateFlow] =
     dbType match {
       case DbType.Postgres =>
-        PipelinedUpdateIndexer.owner(
+        PipelinedExecuteUpdate.owner(
           ledgerDao,
           metrics,
           participantId,
@@ -55,51 +55,50 @@ object UpdateIndexer {
           loggingContext,
         )
       case DbType.H2Database =>
-        AtomicUpdateIndexer.owner(ledgerDao, metrics, participantId)(
+        AtomicExecuteUpdate.owner(ledgerDao, metrics, participantId)(
           loggingContext,
           executionContext,
         )
     }
 }
 
-trait UpdateIndexer {
-  implicit val loggingContext: LoggingContext
-  implicit val executionContext: ExecutionContext
+trait ExecuteUpdate {
+  private[indexer] implicit val loggingContext: LoggingContext
+  private[indexer] implicit val executionContext: ExecutionContext
 
-  def participantId: v1.ParticipantId
+  private[indexer] def participantId: v1.ParticipantId
+  private[indexer] def ledgerDao: LedgerDao
+  private[indexer] def metrics: Metrics
 
-  def ledgerDao: LedgerDao
+  private[indexer] def prepareUpdate(
+      offsetStepPair: OffsetStepUpdatePair[Update]
+  ): Future[PreparedUpdate] =
+    offsetStepPair.update match {
+      case metadataUpdate: MetadataUpdate =>
+        Future.successful(MetadataUpdateStep(offsetStepPair.offsetStep, metadataUpdate))
+      case tx: TransactionAccepted =>
+        Timed.future(
+          metrics.daml.index.db.storeTransactionDbMetrics.prepareBatches,
+          Future {
+            OffsetUpdate.PreparedTransactionInsert(
+              offsetStep = offsetStepPair.offsetStep,
+              update = tx,
+              preparedInsert = ledgerDao.prepareTransactionInsert(
+                submitterInfo = tx.optSubmitterInfo,
+                workflowId = tx.transactionMeta.workflowId,
+                transactionId = tx.transactionId,
+                ledgerEffectiveTime = tx.transactionMeta.ledgerEffectiveTime.toInstant,
+                offset = offsetStepPair.offsetStep.offset,
+                transaction = tx.transaction,
+                divulgedContracts = tx.divulgedContracts,
+                blindingInfo = tx.blindingInfo,
+              ),
+            )
+          },
+        )
+    }
 
-  def flow: Flow[OffsetStepUpdatePair[Update], Unit, NotUsed]
-
-  def metrics: Metrics
-
-  val prepareUpdate: OffsetStepUpdatePair[Update] => Future[PreparedUpdate] = {
-    case OffsetStepUpdatePair(offsetStep, tx: TransactionAccepted) =>
-      Timed.future(
-        metrics.daml.index.db.storeTransactionDbMetrics.prepareBatches,
-        Future {
-          OffsetUpdate.PreparedTransactionInsert(
-            offsetStep = offsetStep,
-            update = tx,
-            preparedInsert = ledgerDao.prepareTransactionInsert(
-              submitterInfo = tx.optSubmitterInfo,
-              workflowId = tx.transactionMeta.workflowId,
-              transactionId = tx.transactionId,
-              ledgerEffectiveTime = tx.transactionMeta.ledgerEffectiveTime.toInstant,
-              offset = offsetStep.offset,
-              transaction = tx.transaction,
-              divulgedContracts = tx.divulgedContracts,
-              blindingInfo = tx.blindingInfo,
-            ),
-          )
-        },
-      )
-    case OffsetStepUpdatePair(offsetStep, update: MetadataUpdate) =>
-      Future.successful(MetadataUpdateStep(offsetStep, update))
-  }
-
-  protected[UpdateIndexer] def updateMetadata(
+  private[indexer] def updateMetadata(
       metadataUpdateStep: MetadataUpdateStep
   ): Future[PersistenceResponse] = {
     val MetadataUpdateStep(offsetStep, update) = metadataUpdateStep
@@ -177,7 +176,7 @@ trait UpdateIndexer {
     }
   }
 
-  protected[UpdateIndexer] def loggingContextFor(
+  private[indexer] def loggingContextFor(
       offset: Offset,
       update: Update,
   ): Map[String, String] =
@@ -185,7 +184,7 @@ trait UpdateIndexer {
       .updated("updateRecordTime", update.recordTime.toInstant.toString)
       .updated("updateOffset", offset.toHexString)
 
-  protected[UpdateIndexer] def loggingContextFor(update: Update): Map[String, String] =
+  private def loggingContextFor(update: Update): Map[String, String] =
     update match {
       case ConfigurationChanged(_, submissionId, participantId, newConfiguration) =>
         Map(
@@ -257,32 +256,16 @@ trait UpdateIndexer {
         )
     }
 
-  protected[UpdateIndexer] def loggingContextPartiesValue(parties: List[Party]): String =
+  private def loggingContextPartiesValue(parties: List[Party]): String =
     parties.mkString("[", ", ", "]")
 }
 
-class PipelinedUpdateIndexer(
-    val ledgerDao: LedgerDao,
-    val metrics: Metrics,
-    val participantId: v1.ParticipantId,
+class PipelinedExecuteUpdate(
+    private[indexer] val ledgerDao: LedgerDao,
+    private[indexer] val metrics: Metrics,
+    private[indexer] val participantId: v1.ParticipantId,
 )(implicit val executionContext: ExecutionContext, val loggingContext: LoggingContext)
-    extends UpdateIndexer {
-
-  override def flow: Flow[OffsetStepUpdatePair[Update], Unit, NotUsed] =
-    Flow[OffsetStepUpdatePair[Update]]
-      .mapAsync(1)(prepareUpdate)
-      .mapAsync(1)(insertTransactionState)
-      .mapAsync(1)(insertTransactionEvents)
-      .mapAsync(1) { case offsetUpdate @ OffsetUpdate(offsetStep, update) =>
-        withEnrichedLoggingContext(loggingContextFor(offsetStep.offset, update)) {
-          implicit loggingContext =>
-            Timed.future(
-              metrics.daml.indexer.stateUpdateProcessing,
-              executeUpdate(offsetUpdate),
-            )
-        }
-      }
-      .map(_ => ())
+    extends ExecuteUpdate {
 
   private val insertTransactionState: PreparedUpdate => Future[PreparedUpdate] = {
     case offsetUpdate @ PreparedTransactionInsert(_, _, preparedInsert) =>
@@ -304,6 +287,22 @@ class PipelinedUpdateIndexer(
     case offsetUpdate => Future.successful(offsetUpdate)
   }
 
+  private val flow: Flow[OffsetStepUpdatePair[Update], Unit, NotUsed] =
+    Flow[OffsetStepUpdatePair[Update]]
+      .mapAsync(1)(prepareUpdate)
+      .mapAsync(1)(insertTransactionState)
+      .mapAsync(1)(insertTransactionEvents)
+      .mapAsync(1) { case offsetUpdate @ OffsetUpdate(offsetStep, update) =>
+        withEnrichedLoggingContext(loggingContextFor(offsetStep.offset, update)) {
+          implicit loggingContext =>
+            Timed.future(
+              metrics.daml.indexer.stateUpdateProcessing,
+              executeUpdate(offsetUpdate),
+            )
+        }
+      }
+      .map(_ => ())
+
   private def executeUpdate(
       preparedUpdate: PreparedUpdate
   )(implicit loggingContext: LoggingContext): Future[PersistenceResponse] =
@@ -322,8 +321,7 @@ class PipelinedUpdateIndexer(
     }
 }
 
-object PipelinedUpdateIndexer {
-
+object PipelinedExecuteUpdate {
   def owner(
       ledgerDao: LedgerDao,
       metrics: Metrics,
@@ -331,22 +329,24 @@ object PipelinedUpdateIndexer {
       executionContext: ExecutionContext,
       loggingContext: LoggingContext,
   ): ResourceOwner[ExecuteUpdateFlow] =
-    ResourceOwner.successful(
-      new PipelinedUpdateIndexer(ledgerDao, metrics, participantId)(
+    ResourceOwner.forValue(() =>
+      new PipelinedExecuteUpdate(ledgerDao, metrics, participantId)(
         executionContext,
         loggingContext,
       ).flow
     )
 }
 
-class AtomicUpdateIndexer(
-    val ledgerDao: LedgerDao,
-    val metrics: Metrics,
-    val participantId: v1.ParticipantId,
-)(implicit val loggingContext: LoggingContext, val executionContext: ExecutionContext)
-    extends UpdateIndexer {
+class AtomicExecuteUpdate(
+    private[indexer] val ledgerDao: LedgerDao,
+    private[indexer] val metrics: Metrics,
+    private[indexer] val participantId: v1.ParticipantId,
+)(
+    private[indexer] implicit val loggingContext: LoggingContext,
+    private[indexer] val executionContext: ExecutionContext,
+) extends ExecuteUpdate {
 
-  override def flow: Flow[OffsetStepUpdatePair[Update], Unit, NotUsed] =
+  private val flow: Flow[OffsetStepUpdatePair[Update], Unit, NotUsed] =
     Flow[OffsetStepUpdatePair[Update]]
       .mapAsync(1)(prepareUpdate)
       .mapAsync(1) { case offsetUpdate @ OffsetUpdate(offsetStep, update) =>
@@ -396,10 +396,10 @@ class AtomicUpdateIndexer(
     }
 }
 
-object AtomicUpdateIndexer {
+object AtomicExecuteUpdate {
   def owner(ledgerDao: LedgerDao, metrics: Metrics, participantId: v1.ParticipantId)(implicit
       loggingContext: LoggingContext,
       executionContext: ExecutionContext,
   ): ResourceOwner[ExecuteUpdateFlow] =
-    ResourceOwner.successful(new AtomicUpdateIndexer(ledgerDao, metrics, participantId).flow)
+    ResourceOwner.forValue(() => new AtomicExecuteUpdate(ledgerDao, metrics, participantId).flow)
 }

@@ -195,8 +195,8 @@ final class JdbcIndexerSpec
       metrics: Metrics,
       participantId: v1.ParticipantId,
       mockFlow: Flow[OffsetStepUpdatePair[Update], Unit, NotUsed],
-  ): UpdateIndexer.FlowOwnerBuilder = {
-    val mocked = mock[UpdateIndexer.FlowOwnerBuilder]
+  ): ExecuteUpdate.FlowOwnerBuilder = {
+    val mocked = mock[ExecuteUpdate.FlowOwnerBuilder]
     // CAN we do without any[LedgerDao]?
     when(
       mocked.apply(

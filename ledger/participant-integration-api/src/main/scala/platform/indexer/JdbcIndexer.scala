@@ -33,7 +33,7 @@ object JdbcIndexer {
       config: IndexerConfig,
       readService: ReadService,
       metrics: Metrics,
-      updateFlowOwnerBuilder: UpdateIndexer.FlowOwnerBuilder,
+      updateFlowOwnerBuilder: ExecuteUpdate.FlowOwnerBuilder,
       ledgerDaoOwner: ResourceOwner[LedgerDao],
       flywayMigrations: FlywayMigrations,
   )(implicit materializer: Materializer, loggingContext: LoggingContext) {
@@ -49,15 +49,14 @@ object JdbcIndexer {
         config,
         readService,
         metrics,
-        UpdateIndexer.ownerBuilder,
+        ExecuteUpdate.flowOwner,
         JdbcLedgerDao.writeOwner(
           serverRole,
           config.jdbcUrl,
           config.eventsPageSize,
           metrics,
           lfValueTranslationCache,
-          jdbcAsyncCommits = true,
-          /** Should be asserted in JdbcIndexerSpec */
+          jdbcAsyncCommits = true, // Should be asserted in JdbcIndexerSpec
         ),
         new FlywayMigrations(config.jdbcUrl),
       )

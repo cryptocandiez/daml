@@ -22,7 +22,7 @@ import com.daml.platform.store.DbType
 /** TODO rename */
 object TransactionsWriter {
 
-  final class PreparedInsert(
+  class PreparedInsert(
       eventsTableExecutables: EventsTable.Batches,
       contractsTableExecutables: ContractsTable.Executables,
       contractWitnessesTableExecutables: ContractWitnessesTable.Executables,
